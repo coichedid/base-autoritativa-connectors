@@ -167,7 +167,7 @@ class MapaInformacaoConnector {
    * @param  {Array[string]} users list of users
    * @return {Promise}         promise of requested method results
    */
-  getTablesReadByUser(users) {
+  getTablesReadByUser(users) { 
     if (!users || users.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
     let statement = baseStatements['allTablesReadBySistema'];
     return _fetchResults('query',{}, statement, {'_CODIGOS_': users}, this.authentication, [(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }], (r,parsedResults) => {

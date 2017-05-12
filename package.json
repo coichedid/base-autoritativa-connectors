@@ -7,7 +7,8 @@
     "compile": "babel src -s -D -d lib --presets es2015,stage-0",
     "dev": "nodemon -w src --exec \"npm run compile && babel-node src/sample/MapaInformacaoConnectorClient.js --presets es2015,stage-0\"",
     "prepublish": "npm run compile",
-    "test": "nyc --require babel-core/register mocha --recursive --reporter spec --timeout 3000"
+    "test": "mochista test/**/*.js --compilers js:babel-register",
+    "tdd": "npm run test -- --watch"
   },
   "eslintConfig": {
     "extends": "eslint:recommended",
@@ -46,9 +47,9 @@
     "chai": "^3.5.0",
     "eslint": "^3.1.1",
     "mocha": "^3.3.0",
+    "mochista": "^0.11.0",
     "nock": "^9.0.13",
     "nodemon": "^1.9.2",
-    "nyc": "^10.3.2",
     "sinon": "^2.2.0"
   },
   "dependencies": {

@@ -494,7 +494,7 @@ describe('MapaInformacaoConnector', () => {
       mapaInformacaoMock.done();
       results.should.be.ok;
       results.should.be.a('array');
-      results.length.should.be.equal(2);
+      results.length.should.be.equal(2); 
       results.forEach( (result, index) => {
         for (let key in tabelas[index]) {
           result.should.have.property(key);

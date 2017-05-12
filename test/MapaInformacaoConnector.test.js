@@ -1,6 +1,6 @@
 import chai from 'chai';
 import nock from 'nock';
-import MapaInformacaoConnector from '../src/connectors/mapa-informacao-connector';
+import MapaInformacaoConnector from '../src/connectors/MapaInformacaoConnector';
 
 let should = chai.should();
 let expect = chai.expect;
@@ -9,13 +9,15 @@ let baseStatements = {
   "allSistemas":"MATCH (v:`Sistema`) RETURN v ORDER BY v. `Identificador` SKIP { s } LIMIT { l }",
   "oneSistema":"MATCH (v:`Sistema`) WHERE (lower(v.`Identificador`) CONTAINS 'amse' OR lower(v.`Código`) CONTAINS 'amse') RETURN v ORDER BY v.`Identificador` SKIP { s } LIMIT { l }",
   "allSistemaDBUsers":"MATCH (v:`Login`) WHERE (lower(v.`Identificador`) CONTAINS 'amse' OR lower(v.`Código`) CONTAINS 'amse') RETURN v ORDER BY v.`Identificador` SKIP { s } LIMIT { l }",
-  "allTablesReadBySistema":"MATCH (vFrom)-[r]->(vTo) WHERE (id(vFrom) IN [2427490,2427339] OR id(vTo) IN [2427490,2427339]) AND type(r) = 'é uma Tabela com leitura pelo Login' RETURN id(vFrom), vFrom.`Identificador`, type(r), id(vTo), vTo.`Identificador` ORDER BY r.type, vFrom.`Identificador`, vTo.`Identificador` SKIP { s } LIMIT { l }"
+  "allTablesReadBySistema":"MATCH (vFrom)-[r]->(vTo) WHERE (id(vFrom) IN [2427490,2427339] OR id(vTo) IN [2427490,2427339]) AND type(r) = 'é uma Tabela com leitura pelo Login' RETURN id(vFrom), vFrom.`Identificador`, type(r), id(vTo), vTo.`Identificador` ORDER BY r.type, vFrom.`Identificador`, vTo.`Identificador` SKIP { s } LIMIT { l }",
+  "oneTabela":"MATCH (v:`Tabela`) WHERE (lower(v.`Identificador`) = 'informix.bd_tecn.informix.age' OR lower(v.`Código`) = 'informix.bd_tecn.informix.age' OR lower(v.`Nome`) = 'informix.bd_tecn.informix.age') RETURN v"
 };
 let mapaInformacaoURI = 'http://localhost:7474';
 let mapaInformacaoPath = '/db/data/transaction/commit';
 let mapaInformacaoConnector;
 let sistemasIds = [2428048,2428049];
 let loginsIds = [2427490,2427339];
+let tabelasIds = [2430009]
 let logins = [
   {
     "Código": "amse",
@@ -54,6 +56,16 @@ let sistemas = [
     "Diretoria": "DPP"
   }];
 let tabelas = [
+  {
+    "Código": "age",
+    "Data de Cadastro": "2017-02-23 18:55:22.573000000",
+    "Identificador": "informix.bd_tecn.informix.age",
+    "Descrição": "Lista de agentes, que são cada uma das partes envolvidas em regulamentação, planejamento, acesso, expansão e operação do sistema elétrico, bem como em comercialização e consumo de energia elétrica. O conceito \"agente\" contempla as empresas que participam do ONS ou empresas em países vizinhos que possuem interligação com sistema elétrico sob responsabilidade do ONS.",
+    "Número de Linhas": "1938",
+    "Nome": "Agente"
+  }
+];
+let tabelasDeSistema = [
   {
     fromId:2369271,
     fromIdentificador:'informix.bd_tecn.informix.age',
@@ -248,20 +260,58 @@ let tabelasOfLoginsResponse = {
       "data": [
         {
           "rest": [
-            tabelas[0]['fromId'],
-            tabelas[0]['fromIdentificador'],
-            tabelas[0]['verb'],
-            tabelas[0]['toId'],
-            tabelas[0]['toIdentificador']
+            tabelasDeSistema[0]['fromId'],
+            tabelasDeSistema[0]['fromIdentificador'],
+            tabelasDeSistema[0]['verb'],
+            tabelasDeSistema[0]['toId'],
+            tabelasDeSistema[0]['toIdentificador']
           ]
         },
         {
           "rest": [
-            tabelas[1]['fromId'],
-            tabelas[1]['fromIdentificador'],
-            tabelas[1]['verb'],
-            tabelas[1]['toId'],
-            tabelas[1]['toIdentificador']
+            tabelasDeSistema[1]['fromId'],
+            tabelasDeSistema[1]['fromIdentificador'],
+            tabelasDeSistema[1]['verb'],
+            tabelasDeSistema[1]['toId'],
+            tabelasDeSistema[1]['toIdentificador']
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": []
+};
+let tabelasResponse = {
+  "results": [
+    {
+      "columns": [
+        "v"
+      ],
+      "data": [
+        {
+          "rest": [
+            {
+              "outgoing_relationships": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships/out",
+              "labels": "http://prd-neo4j-01:7474/db/data/node/2430009/labels",
+              "all_typed_relationships": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships/all/{-list|&|types}",
+              "traverse": "http://prd-neo4j-01:7474/db/data/node/2430009/traverse/{returnType}",
+              "self": "http://prd-neo4j-01:7474/db/data/node/2430009",
+              "property": "http://prd-neo4j-01:7474/db/data/node/2430009/properties/{key}",
+              "outgoing_typed_relationships": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships/out/{-list|&|types}",
+              "properties": "http://prd-neo4j-01:7474/db/data/node/2430009/properties",
+              "incoming_relationships": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships/in",
+              "create_relationship": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships",
+              "paged_traverse": "http://prd-neo4j-01:7474/db/data/node/2430009/paged/traverse/{returnType}{?pageSize,leaseTime}",
+              "all_relationships": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships/all",
+              "incoming_typed_relationships": "http://prd-neo4j-01:7474/db/data/node/2430009/relationships/in/{-list|&|types}",
+              "metadata": {
+                "id": 2430009,
+                "labels": [
+                  "Tabela"
+                ]
+              },
+              "data": tabelas[0]
+            }
           ]
         }
       ]
@@ -494,13 +544,76 @@ describe('MapaInformacaoConnector', () => {
       mapaInformacaoMock.done();
       results.should.be.ok;
       results.should.be.a('array');
-      results.length.should.be.equal(2); 
+      results.length.should.be.equal(2);
+      results.forEach( (result, index) => {
+        for (let key in tabelasDeSistema[index]) {
+          result.should.have.property(key);
+          expect(result[key]).to.be.ok;
+          result[key].should.be.equal(tabelasDeSistema[index][key]);
+        }
+      } )
+      done();
+    } ).catch( (error) => done(error) );
+  });
+  it('should get an error with no tabela name for tabela details', (done) => {
+    // set query for Neo4J
+    args.data.statements[0].statement = baseStatements['oneTabela'];
+    // set nock interceptor
+    let mapaInformacaoMock = nock(mapaInformacaoURI)
+                            //.log(log)
+                            .post(mapaInformacaoPath, args.data)
+                            .reply(200,tabelasResponse);
+
+    mapaInformacaoConnector.getTabela().then( (results) => {
+      done('Invalid tabela name not checked');
+    } ).catch( (error) => {
+      error.should.be.ok;
+      error.should.be.equal('Invalid argument');
+      done();
+    } );
+  });
+
+  it('should get an error with invalid tabela name for tabela details', (done) => {
+    // set query for Neo4J
+    args.data.statements[0].statement = baseStatements['oneTabela'];
+    // set nock interceptor
+    let mapaInformacaoMock = nock(mapaInformacaoURI)
+                            //.log(log)
+                            .post(mapaInformacaoPath, args.data)
+                            .reply(200,tabelasResponse);
+
+    mapaInformacaoConnector.getTabela('').then( (results) => {
+      done('Invalid tabela name not checked');
+    } ).catch( (error) => {
+      error.should.be.ok;
+      error.should.be.equal('Invalid argument');
+      done();
+    } );
+  });
+
+  it('should get only one tabela', (done) => {
+    // set query for Neo4J
+    args.data.statements[0].statement = baseStatements['oneTabela'];
+
+    // set nock interceptor
+    let mapaInformacaoMock = nock(mapaInformacaoURI)
+                            //.log(log)
+                            .post(mapaInformacaoPath, args.data)
+                            .reply(200,tabelasResponse);
+    mapaInformacaoConnector.getTabela('informix.bd_tecn.informix.age').then( (results) => {
+
+      mapaInformacaoMock.done();
+      results.should.be.ok;
+      results.should.be.a('array');
+      results.length.should.be.equal(1);
       results.forEach( (result, index) => {
         for (let key in tabelas[index]) {
           result.should.have.property(key);
           expect(result[key]).to.be.ok;
           result[key].should.be.equal(tabelas[index][key]);
         }
+        result.should.have.property('id');
+        result.id.should.be.equal(tabelasIds[index]);
       } )
       done();
     } ).catch( (error) => done(error) );

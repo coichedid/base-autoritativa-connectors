@@ -1,6 +1,6 @@
 {
   "name": "base-autoritativa-connectors",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wrappers for several authoritative databases for MediaWiki system",
   "main": "dist",
   "scripts": {

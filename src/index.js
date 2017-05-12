@@ -1,3 +1,3 @@
-import MapaInformacao from './connectors/mapa-informacao-connector';
-
-export const MapaInformacaoConnector = MapaInformacao;
+import MapaInformacao from './connectors/MapaInformacaoConnector';
+export default {MapaInformacaoConnector:MapaInformacao};
+export const MapaInformacaoConnector = MapaInformacao; 

@@ -1,6 +1,6 @@
 import chai from 'chai';
 import nock from 'nock';
-import MapaInformacaoConnector from '../src/connectors/MapaInformacaoConnector';
+import MapaInformacaoConnector from '../../src/connectors/MapaInformacaoConnector';
 
 let should = chai.should();
 let expect = chai.expect;
@@ -618,5 +618,4 @@ describe('MapaInformacaoConnector', () => {
       done();
     } ).catch( (error) => done(error) );
   });
-
 });

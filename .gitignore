@@ -59,6 +59,7 @@ typings/
 
 # build
 dist
+lib
 
 .DS_Store
 /src/config.json

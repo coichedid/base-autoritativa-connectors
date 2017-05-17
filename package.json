@@ -2,7 +2,7 @@
   "name": "base-autoritativa-connectors",
   "version": "0.4.0",
   "description": "Wrappers for several authoritative databases for MediaWiki system",
-  "main": "dist",
+  "main": "lib/index.js",
   "scripts": {
     "compile": "babel src -s -D -d lib --presets es2015,stage-0",
     "dev": "nodemon -w src --exec \"npm run compile && babel-node src/sample/MapaInformacaoConnectorClient.js --presets es2015,stage-0\"",

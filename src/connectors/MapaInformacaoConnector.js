@@ -22,25 +22,29 @@ class MapaInformacaoConnector extends BaseConnector{
   }
 
   /**
-   * base function to parse results from Neo4J
-   * @param  {object} data          Neo4J response data
-   * @param  {function} parseFunction custom parse function
-   * @return {Array[object]}               array of parsed results
+   * prepara data payload specific for Neo4J queries
+   * @param  {string} statement    base query on Neo4J
+   * @param  {object} substtutions Key/Value substtutions to be applyed on statement
+   * @return {object}              payload object
    */
-  _parseResults(data, parseFunction) {
-    let results = data.results[0].data;
-    let parsedResults = [];
-    results.map((r)=>{
-      if (parseFunction) parsedResults = parseFunction(r,parsedResults);
-      else {
-        if (!r.rest || r.rest.length != 1) return;
-        let rData = r.rest[0].data;
-        rData['id'] = r.rest[0].metadata.id;
-        parsedResults.push(rData);
-        return;
+  _getDataQueryArguments(statement, substtutions) {
+    let queryStatement = statement;
+    if (substtutions) {
+      for (let key in substtutions) {
+        let regex = new RegExp(key,'g');
+        queryStatement = queryStatement.replace(regex,substtutions[key]);
       }
-    });
-    return parsedResults;
+    }
+    let payload = {
+      statements:[
+        {
+          statement:queryStatement,
+          parameters:{s:0,l:10000},
+          resultDataContents:["REST"]
+        }
+      ]
+    };
+    return payload;
   }
 
   /**
@@ -49,7 +53,8 @@ class MapaInformacaoConnector extends BaseConnector{
    */
   getAllSistemas() {
     let statement = baseStatements['allSistemas'];
-    return this._fetchResults('query', {}, statement, {}, this.authentication, [(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]);
+    let payload = this._getDataQueryArguments(statement, {});
+    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
   }
 
   /**
@@ -61,7 +66,8 @@ class MapaInformacaoConnector extends BaseConnector{
     if (!sistema || sistema.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
     let lwSistema = sistema.toLowerCase();
     let statement = baseStatements['oneSistema'];
-    return this._fetchResults('query',{},statement,{'_SISTEMA_':lwSistema},this.authentication,[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]);
+    let payload = this._getDataQueryArguments(statement,{'_SISTEMA_':lwSistema});
+    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
   }
 
   /**
@@ -73,7 +79,8 @@ class MapaInformacaoConnector extends BaseConnector{
     if (!sistema || sistema.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
     let lwSistema = sistema.toLowerCase();
     let statement = baseStatements['allSistemaDBUsers'];
-    return this._fetchResults('query',{}, statement, {'_SISTEMA_': lwSistema}, this.authentication, [(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]);
+    let payload = this._getDataQueryArguments(statement, {'_SISTEMA_': lwSistema});
+    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
   }
 
   /**
@@ -84,19 +91,25 @@ class MapaInformacaoConnector extends BaseConnector{
   getTablesReadByUser(users) {
     if (!users || users.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
     let statement = baseStatements['allTablesReadBySistema'];
-    return this._fetchResults('query',{}, statement, {'_CODIGOS_': users}, this.authentication, [(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }], (r,parsedResults) => {
-      if (r.rest && r.rest.length == 5) {
-        let rData = {
-          fromId:r.rest[0],
-          fromIdentificador:r.rest[1],
-          verb:r.rest[2],
-          toId:r.rest[3],
-          toIdentificador:r.rest[4]
+    let payload = this._getDataQueryArguments(statement, {'_CODIGOS_': users});
+    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }],
+    parseFunction:(data) => {
+      let parsedResults = [];
+      let results = data.results[0].data;
+      results.map( (r) => {
+        if (r.rest && r.rest.length == 5) {
+          let rData = {
+            fromId:r.rest[0],
+            fromIdentificador:r.rest[1],
+            verb:r.rest[2],
+            toId:r.rest[3],
+            toIdentificador:r.rest[4]
+          }
+          parsedResults.push(rData);
         }
-        parsedResults.push(rData);
-      }
+      } )
       return parsedResults;
-    });
+    }});
   }
 
   /**
@@ -108,7 +121,8 @@ class MapaInformacaoConnector extends BaseConnector{
     if (!tabela || tabela.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
     let lwTabela = tabela.replace(/ /g,'_').toLowerCase();
     let statement = baseStatements['oneTabela'];
-    return this._fetchResults('query',{}, statement, {'_TABELA_': lwTabela}, this.authentication, [(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]);
+    let payload = this._getDataQueryArguments(statement, {'_TABELA_': lwTabela});
+    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
   }
 }
 

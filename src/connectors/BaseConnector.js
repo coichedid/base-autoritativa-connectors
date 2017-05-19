@@ -2,7 +2,7 @@ import {Client} from 'node-rest-client';
 import ConnectorException from './ConnectorException';
 
 let client = new Client();
-
+let methodsArgs = {};
 /**
  * Connector to Mapa da Informacao system
  * @type {class}
@@ -16,39 +16,40 @@ class BaseConnector {
    */
   _registerMethods(baseURL, methods) {
     for (let key in methods) {
+      let path = methods[key];
       let [action, verb] = key.split('_');
-      client.registerMethod(action, baseURL + methods[key], verb);
+      let [p,a] = path.split('?');
+      if (a) {
+        let params = a.split('&');
+        params.forEach( (param) => {
+          let [k,v] = param.split('=');
+          if (!methodsArgs[action]) methodsArgs[action] = {};
+          methodsArgs[action][k] = v;
+        } );
+      }
+      client.registerMethod(action, baseURL + p, verb);
     }
   }
 
   /**
    * Prepare arguments for a POST request
-   * @param  {string} statement Query statement to be passed to Neo4J
-   * @param  {object} substtutions Key/Value object with query substtutions
+   * @param  {object} data payload data passed on POST action
+   * @param  {object} pathSubs Key/Value object with path substtutions
+   * @param  {object} parameters Key/Value object with parameters passed on GET action
+   * @param  {object} headers Key/Value object headers
    * @param  {string} authentication token authentication
    * @return {object}           Argument object
    */
-  _getArguments(statement, substtutions, authentication) {
-    let queryStatement = statement;
-    if (substtutions) {
-      for (let key in substtutions) {
-        let regex = new RegExp(key,'g');
-        queryStatement = queryStatement.replace(regex,substtutions[key]);
-      }
-    }
+  _getArguments({action, data, pathSubs, parameters, headers, authentication}={}) {
     let args = {
-      data:{
-        statements:[
-          {
-            statement:queryStatement,
-            parameters:{s:0,l:10000},
-            resultDataContents:["REST"]
-          }
-        ]
-      },
-      headers: {"Content-Type": "application/json"}
-    }
-    if (authentication != "") args.headers.Authorization = authentication;
+      parameters:{}
+    };
+    if (data) args.data = data;
+    if (pathSubs) args.path = pathSubs;
+    if (parameters) args.parameters = parameters;
+    if (headers) args.headers = headers; else args.headers = {};
+    if (action && methodsArgs[action]) args.parameters = Object.assign(args.parameters,methodsArgs[action]);
+    args.headers = Object.assign(args.headers,{"Content-Type": "application/json"},authentication?{Authorization:authentication}:{});
     return args;
   }
 
@@ -59,7 +60,19 @@ class BaseConnector {
    * @return {Array[object]}               array of parsed results
    */
   _parseResults(data, parseFunction) {
-    throw new ConnectorException('Not implemented');
+    let parsedResults = [];
+    if (parseFunction) parsedResults = parseFunction(data);
+    else {
+      let results = data.results[0].data;
+      results.map((r)=>{
+        if (!r.rest || r.rest.length != 1) return;
+        let rData = r.rest[0].data;
+        rData['id'] = r.rest[0].metadata.id;
+        parsedResults.push(rData);
+        return;
+      });
+    }
+    return parsedResults;
   }
 
   /**
@@ -83,18 +96,22 @@ class BaseConnector {
   /**
    * Base function to connect to Neo4J and get results
    * @param  {string} action        name of remote method registered on client
+   * @param  {object} pathSubs          key/value substtutions on path
    * @param  {object} args          parameters to be passed on query string
    * @param  {object} payload       data to be serialized and passed on a POST action
-   * @param  {object} payloadParams Key/Value object with query substtutions
+   * @param  {object} headers Key/Value object with headers
    * @param  {string} authentication token authentication
    * @param  {Array[string]} validation    hierarchal names to be used to check a valid response data
    * @param  {function} parseFunction Used to parse returned data. If null, raw data is returned
    * @return {Promise}               a Promise to requested method results
    */
-  _fetchResults(action, args, payload, payloadParams, authentication, validation, parseFunction) {
+  _fetchResults({action, pathSubs, args, payload, headers, authentication, validation, parseFunction} = {}) {
     return new Promise( (resolve, reject) => {
-      let payloadData = this._getArguments(payload,payloadParams,authentication);
-      client.methods[action](payloadData, (data, response) => {
+      let connectionArguments = this._getArguments({action:action, data:payload,pathSubs:pathSubs,parameters:args,headers:headers,authentication:authentication});
+      client.methods[action](connectionArguments, (data, response) => {
+        if (response.statusCode >= 400) {
+          reject(data);
+        }
         if (data.errors && data.errors.length > 0) {
           reject(data.errors);
         }
@@ -107,6 +124,9 @@ class BaseConnector {
             resolve(parsedData);
           }
         }
+      })
+      .on('error', (err) => {
+        reject('Unknown error');
       });
     } );
   }

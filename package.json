@@ -7,7 +7,7 @@
     "compile": "babel src -s -D -d lib --presets es2015,stage-0",
     "dev": "nodemon -w src --exec \"npm run compile && babel-node src/sample/MapaInformacaoConnectorClient.js --presets es2015,stage-0\"",
     "prepublish": "npm run compile",
-    "test": "mochista test/*.js test/**/*.js --compilers js:babel-register",
+    "test": "eslint src;mochista test/*.js test/**/*.js --compilers js:babel-register",
     "tdd": "npm run test -- --watch"
   },
   "eslintConfig": {

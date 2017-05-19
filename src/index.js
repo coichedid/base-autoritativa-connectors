@@ -1,3 +1,5 @@
 import MapaInformacao from './connectors/MapaInformacaoConnector';
-export default {MapaInformacaoConnector:MapaInformacao};
-export const MapaInformacaoConnector = MapaInformacao; 
+import MediaWiki from './connectors/MediaWikiConnector';
+export default {MapaInformacaoConnector:MapaInformacao,MediaWikiConnector:MediaWiki};
+export const MapaInformacaoConnector = MapaInformacao;
+export const MediaWikiConnector = MediaWiki;

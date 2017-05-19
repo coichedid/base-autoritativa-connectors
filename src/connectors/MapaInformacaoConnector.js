@@ -52,9 +52,17 @@ class MapaInformacaoConnector extends BaseConnector{
    * @return {Promise} promise to requested method results
    */
   getAllSistemas() {
-    let statement = baseStatements['allSistemas'];
-    let payload = this._getDataQueryArguments(statement, {});
-    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
+    return new Promise( (resolve,reject) => {
+      let statement = baseStatements['allSistemas'];
+      let payload = this._getDataQueryArguments(statement, {});
+      this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]})
+        .then( (data) => {
+          resolve({status:'Success',data:data});
+        })
+        .catch( (reason) => {
+          reject({status:'Failure',data:reason});
+        });
+    });
   }
 
   /**
@@ -63,11 +71,15 @@ class MapaInformacaoConnector extends BaseConnector{
    * @return {Promise}         promise to requested method results
    */
   getSistema(sistema) {
-    if (!sistema || sistema.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
-    let lwSistema = sistema.toLowerCase();
-    let statement = baseStatements['oneSistema'];
-    let payload = this._getDataQueryArguments(statement,{'_SISTEMA_':lwSistema});
-    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
+    return new Promise( (resolve,reject) => {
+      if (!sistema || sistema.length == 0) reject({status:'Failure',data:'Invalid argument'});
+      let lwSistema = sistema.toLowerCase();
+      let statement = baseStatements['oneSistema'];
+      let payload = this._getDataQueryArguments(statement,{'_SISTEMA_':lwSistema});
+      this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]})
+        .then( (data) => resolve({status:'Success',data:data}) )
+        .catch( (reason) => reject({status:'Failure',data:reason}) );
+    });
   }
 
   /**
@@ -76,11 +88,15 @@ class MapaInformacaoConnector extends BaseConnector{
    * @return {Promise}         primise to requested method results
    */
   getAllSistemaDbUsers(sistema) {
-    if (!sistema || sistema.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
-    let lwSistema = sistema.toLowerCase();
-    let statement = baseStatements['allSistemaDBUsers'];
-    let payload = this._getDataQueryArguments(statement, {'_SISTEMA_': lwSistema});
-    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
+    return new Promise( (resolve,reject) => {
+      if (!sistema || sistema.length == 0) reject({status:'Failure',data:'Invalid argument'});
+      let lwSistema = sistema.toLowerCase();
+      let statement = baseStatements['allSistemaDBUsers'];
+      let payload = this._getDataQueryArguments(statement, {'_SISTEMA_': lwSistema});
+      this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]})
+        .then( (data) => resolve({status:'Success',data:data}))
+        .catch( (reason) => reject({status:'Failure',data:reason}));
+    })
   }
 
   /**
@@ -89,27 +105,31 @@ class MapaInformacaoConnector extends BaseConnector{
    * @return {Promise}         promise of requested method results
    */
   getTablesReadByUser(users) {
-    if (!users || users.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
-    let statement = baseStatements['allTablesReadBySistema'];
-    let payload = this._getDataQueryArguments(statement, {'_CODIGOS_': users});
-    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }],
-    parseFunction:(data) => {
-      let parsedResults = [];
-      let results = data.results[0].data;
-      results.map( (r) => {
-        if (r.rest && r.rest.length == 5) {
-          let rData = {
-            fromId:r.rest[0],
-            fromIdentificador:r.rest[1],
-            verb:r.rest[2],
-            toId:r.rest[3],
-            toIdentificador:r.rest[4]
+    return new Promise( (resolve,reject) => {
+      if (!users || users.length == 0) reject({status:'Failure',data:'Invalid argument'});
+      let statement = baseStatements['allTablesReadBySistema'];
+      let payload = this._getDataQueryArguments(statement, {'_CODIGOS_': users});
+      this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }],
+      parseFunction:(data) => {
+        let parsedResults = [];
+        let results = data.results[0].data;
+        results.map( (r) => {
+          if (r.rest && r.rest.length == 5) {
+            let rData = {
+              fromId:r.rest[0],
+              fromIdentificador:r.rest[1],
+              verb:r.rest[2],
+              toId:r.rest[3],
+              toIdentificador:r.rest[4]
+            }
+            parsedResults.push(rData);
           }
-          parsedResults.push(rData);
-        }
-      } )
-      return parsedResults;
-    }});
+        } )
+        return parsedResults;
+      }})
+        .then( (data) => resolve({status:'Success',data:data}))
+        .catch( (reason) => reject({status:'Failure',data:reason}) );
+    });
   }
 
   /**
@@ -118,11 +138,15 @@ class MapaInformacaoConnector extends BaseConnector{
    * @return {Promise}        promise for requested results
    */
   getTabela(tabela) {
-    if (!tabela || tabela.length == 0) return new Promise( (resolve,reject) => reject('Invalid argument') );
-    let lwTabela = tabela.replace(/ /g,'_').toLowerCase();
-    let statement = baseStatements['oneTabela'];
-    let payload = this._getDataQueryArguments(statement, {'_TABELA_': lwTabela});
-    return this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]});
+    return new Promise( (resolve,reject) => {
+      if (!tabela || tabela.length == 0) reject({status:'Failure',data:'Invalid argument'});
+      let lwTabela = tabela.replace(/ /g,'_').toLowerCase();
+      let statement = baseStatements['oneTabela'];
+      let payload = this._getDataQueryArguments(statement, {'_TABELA_': lwTabela});
+      this._fetchResults({action:'query', payload:payload, authentication:this.authentication, validation:[(data) => { return (data.results && data.results.length == 1 && data.results[0].data && data.results[0].data.length > 0); }]})
+        .then( (data) => resolve({status:'Success',data:data}))
+        .catch( (reason) => reject({status:'Failure',data:reason}));
+    });
   }
 }
 

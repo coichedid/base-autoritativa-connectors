@@ -113,7 +113,7 @@ class BaseConnector {
           reject(data);
         }
         if (data.errors && data.errors.length > 0) {
-          reject(data.errors);
+          reject(data.erros); 
         }
         else {
           if (!data || !this._validateResults(data,validation)) {

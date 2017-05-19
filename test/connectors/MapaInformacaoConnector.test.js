@@ -360,9 +360,10 @@ describe('MapaInformacaoConnector', () => {
 
       mapaInformacaoMock.done();
       results.should.be.ok;
-      results.should.be.a('array');
-      results.length.should.be.equal(2);
-      results.forEach( (result, index) => {
+      results.status.should.be.equal('Success');
+      results.data.should.be.ok;
+      results.data.should.be.a('array');
+      results.data.forEach( (result, index) => {
         for (let key in sistemas[index]) {
           result.should.have.property(key);
           expect(result[key]).to.be.ok;
@@ -374,6 +375,7 @@ describe('MapaInformacaoConnector', () => {
       done();
     } ).catch( (error) => done(error) );
   });
+
   it('should get an error with no sistema name for one sistema', (done) => {
     // set query for Neo4J
     args.data.statements[0].statement = baseStatements['oneSistema'];
@@ -387,7 +389,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid name not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -405,7 +407,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid name not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -422,9 +424,11 @@ describe('MapaInformacaoConnector', () => {
     mapaInformacaoConnector.getSistema('amse').then( (results) => {
       mapaInformacaoMock.done();
       results.should.be.ok;
-      results.should.be.a('array');
-      results.length.should.be.equal(1);
-      results.forEach( (result, index) => {
+      results.status.should.be.equal('Success');
+      results.data.should.be.ok;
+      results.data.should.be.a('array');
+      results.data.length.should.be.equal(1);
+      results.data.forEach( (result, index) => {
         for (let key in sistemas[index]) {
           result.should.have.property(key);
           expect(result[key]).to.be.ok;
@@ -449,7 +453,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid name not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -466,7 +470,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid name not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -482,9 +486,11 @@ describe('MapaInformacaoConnector', () => {
     mapaInformacaoConnector.getAllSistemaDbUsers('amse').then( (results) => {
       mapaInformacaoMock.done();
       results.should.be.ok;
-      results.should.be.a('array');
-      results.length.should.be.equal(2);
-      results.forEach( (result, index) => {
+      results.status.should.be.equal('Success');
+      results.data.should.be.ok;
+      results.data.should.be.a('array');
+      results.data.length.should.be.equal(2);
+      results.data.forEach( (result, index) => {
         for (let key in logins[index]) {
           result.should.have.property(key);
           expect(result[key]).to.be.ok;
@@ -509,7 +515,7 @@ describe('MapaInformacaoConnector', () => {
       done('no user list not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -526,7 +532,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid user list not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -543,9 +549,11 @@ describe('MapaInformacaoConnector', () => {
 
       mapaInformacaoMock.done();
       results.should.be.ok;
-      results.should.be.a('array');
-      results.length.should.be.equal(2);
-      results.forEach( (result, index) => {
+      results.status.should.be.equal('Success');
+      results.data.should.be.ok;
+      results.data.should.be.a('array');
+      results.data.length.should.be.equal(2);
+      results.data.forEach( (result, index) => {
         for (let key in tabelasDeSistema[index]) {
           result.should.have.property(key);
           expect(result[key]).to.be.ok;
@@ -568,7 +576,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid tabela name not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -586,7 +594,7 @@ describe('MapaInformacaoConnector', () => {
       done('Invalid tabela name not checked');
     } ).catch( (error) => {
       error.should.be.ok;
-      error.should.be.equal('Invalid argument');
+      error.should.be.deep.equal({status:'Failure',data:'Invalid argument'});
       done();
     } );
   });
@@ -604,9 +612,11 @@ describe('MapaInformacaoConnector', () => {
 
       mapaInformacaoMock.done();
       results.should.be.ok;
-      results.should.be.a('array');
-      results.length.should.be.equal(1);
-      results.forEach( (result, index) => {
+      results.status.should.be.equal('Success');
+      results.data.should.be.ok;
+      results.data.should.be.a('array');
+      results.data.length.should.be.equal(1);
+      results.data.forEach( (result, index) => {
         for (let key in tabelas[index]) {
           result.should.have.property(key);
           expect(result[key]).to.be.ok;

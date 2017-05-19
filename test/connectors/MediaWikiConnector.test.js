@@ -61,11 +61,22 @@ let tabelasWikiResponse = {
   	}
   };
 
+let pageBody = '%7B%7BTemplateTabelaBancoDados%7D%7D%0A%7B%7BTabela+de+Banco+de+Dados%7D%7D%0A';
+
 let tabelasResponse = {
     tabelas:[
       'Informix.bd tecn.informix.age',
       'Informix.bd tecn.informix.cos'
     ]
+};
+
+let tokenResponse = {
+    "batchcomplete": "",
+    "query": {
+        "tokens": {
+            "csrftoken": "59322ed9a6c171b759070c6b60b5591c591c49f0+\\"
+        }
+    }
 };
 
 describe('MediaWikiConnector', () => {
@@ -79,16 +90,16 @@ describe('MediaWikiConnector', () => {
 
   it('shoould list known Tabela de Banco de Dados on Wiki', (done) => {
     // set nock interceptor
-    let mediWikiMock = nock(mediawikiURI)
+    let mediaWikiMock = nock(mediawikiURI)
                             // .log(log)
                             .get('/api.php')
                             .query(baseStatements['tabelasWiki'])
                             .reply(200,tabelasWikiResponse);
     mediaWikiConnector.getAllTabelasBancoDeDados()
       .then( (results) => {
-        mediWikiMock.done();
+        mediaWikiMock.done();
         results.should.be.ok;
-        results.should.be.deep.equal(tabelasResponse);
+        results.should.be.deep.equal({status:'Success',data:tabelasResponse});
         done();
       } )
       .catch( (reason) => done(reason) );
@@ -96,41 +107,212 @@ describe('MediaWikiConnector', () => {
 
   it('should handle error from media wiki on list known Tabela de Banco de Dados', (done) => {
     // set nock interceptor
-    let mediWikiMock = nock(mediawikiURI)
+    let mediaWikiMock = nock(mediawikiURI)
                             //.log(log)
                             .get('/api.php')
                             .query(baseStatements['tabelasWiki'])
                             .reply(500,{statusMessage:'Unknown error'});
     mediaWikiConnector.getAllTabelasBancoDeDados()
       .then( (results) => {
-        mediWikiMock.done();
+        mediaWikiMock.done();
         done('Unhandled error');
       } )
       .catch( (reason) => {
-        mediWikiMock.done();
-        reason.should.be.deep.equal({statusMessage:'Unknown error'});
+        mediaWikiMock.done();
+        reason.should.be.deep.equal({status:'Failure',data:{statusMessage:'Unknown error'}});
         done();
       } )
   });
 
   it('should handle unknown error from media wiki on list known Tabela de Banco de Dados', (done) => {
     // set nock interceptor
-    let mediWikiMock = nock(mediawikiURI)
+    let mediaWikiMock = nock(mediawikiURI)
                             //.log(log)
                             .get('/api.php')
                             .query(baseStatements['tabelasWiki'])
                             .replyWithError('Unknown error');
     mediaWikiConnector.getAllTabelasBancoDeDados()
       .then( (results) => {
-        mediWikiMock.done();
+        mediaWikiMock.done();
         done('Unhandled error');
       } )
       .catch( (reason) => {
-        mediWikiMock.done();
-        reason.should.be.equal('Unknown error');
+        mediaWikiMock.done();
+        reason.should.be.deep.equal({status:'Failure',data:'Unknown error'});
         done();
       } )
   });
 
+  it('should create a list of Tabela de Banco de Dados pages based on list of names and a authentication token', (done) => {
+    let statements = [];
+    let mediaWikiMocks = [];
+    tabelasResponse.tabelas.forEach( (tabela) => {
+      let createStatement = Object.assign({}, baseStatements['create_page']);
+      createStatement.title = tabela;
+      createStatement.text = pageBody;
+      createStatement.token = "token_criado";
+      statements.push(createStatement);
+      // set nock interceptor
+      let mediaWikiMock = nock(mediawikiURI)
+          //.log(log)
+          .get('/api.php')
+          .query(createStatement)
+          .reply(200,{edit:{result:'Success'}});
+      mediaWikiMocks.push(mediaWikiMock);
+    } );
 
+    mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas, 'token_criado')
+      .then( (data) => {
+        mediaWikiMocks.forEach( (mock) => mock.done() );
+        expect(data).to.exists;
+        data.should.be.deep.equal({status:'Success',data:[{ nome: tabelasResponse.tabelas[0], result: 'Success' },{ nome: tabelasResponse.tabelas[1], result: 'Success' }]});
+        done();
+      })
+      .catch( (reason) => {
+        mediaWikiMocks.forEach( (mock) => mock.done() );
+        done(reason);
+      } )
+  });
+
+  it('should handle no nomes on create page of Tabela de Banco de DAdos', (done) => {
+    mediaWikiConnector.createPageTabelaDeBancoDeDados(null,'token_criado')
+      .then( (data) => {
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        reason.should.be.deep.equal({status:'Failure',data:'No nomes list provided'});
+        done();
+      })
+  });
+
+  it('should handle empty nomes on create page of Tabela de Banco de Dados', (done) => {
+    mediaWikiConnector.createPageTabelaDeBancoDeDados([],'token_criado')
+      .then( (data) => {
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        reason.should.be.deep.equal({status:'Failure',data:'No nomes list provided'});
+        done();
+      })
+  });
+
+  it('should handle no token provided on create page of Tabela de Banco de Dados', (done) => {
+    mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas)
+      .then( (data) => {
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        reason.should.be.deep.equal({status:'Failure',data:'No token provided'});
+        done();
+      })
+  });
+
+  it('should handle empty token provided on create page of Tabela de Banco de Dados', (done) => {
+    mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas,'')
+      .then( (data) => {
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        reason.should.be.deep.equal({status:'Failure',data:'No token provided'});
+        done();
+      })
+  });
+
+
+  it('should handle failure on create page of Tabela de Banco de Dados', (done) => {
+    let statements = [];
+    let mediaWikiMocks = [];
+    tabelasResponse.tabelas.forEach( (tabela,index) => {
+      let createStatement = Object.assign({}, baseStatements['create_page']);
+      createStatement.title = tabela;
+      createStatement.text = pageBody;
+      createStatement.token = "token_criado";
+      statements.push(createStatement);
+      // set nock interceptor
+      let mediaWikiMock = nock(mediawikiURI)
+          //.log(log)
+          .get('/api.php')
+          .query(createStatement)
+          .reply(200,{edit:{result:(index == 0?'Success':'Failure')}});
+      mediaWikiMocks.push(mediaWikiMock);
+    } );
+
+    mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas, 'token_criado')
+      .then( (data) => {
+        mediaWikiMocks.forEach( (mock) => mock.done() );
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        mediaWikiMocks.forEach( (mock) => mock.done() );
+        expect(reason).be.exists;
+        reason.should.be.deep.equal({status:'Failure',data:[{ nome: tabelasResponse.tabelas[0], result: 'Success' },{ nome: tabelasResponse.tabelas[1], result: 'Failure' }]});
+        done();
+      });
+  });
+
+  it('should handle unknown error on create page of Tabela de Banco de Dados', (done) => {
+    let statements = [];
+    let mediaWikiMocks = [];
+    tabelasResponse.tabelas.forEach( (tabela,index) => {
+      let createStatement = Object.assign({}, baseStatements['create_page']);
+      createStatement.title = tabela;
+      createStatement.text = pageBody;
+      createStatement.token = "token_criado";
+      statements.push(createStatement);
+      // set nock interceptor
+      let mediaWikiMock = nock(mediawikiURI)
+          //.log(log)
+          .get('/api.php')
+          .query(createStatement)
+          .replyWithError('Unknown error');
+      mediaWikiMocks.push(mediaWikiMock);
+    } );
+
+    mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas, 'token_criado')
+      .then( () => {
+        mediaWikiMocks.forEach( (mock) => mock.done() );
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        mediaWikiMocks.forEach( (mock) => mock.done() );
+        reason.should.be.deep.equal({status:'Failure',data:'Unknown error'});
+        done();
+      });
+  });
+
+  it('should get an authentication token from media wiki', (done) => {
+    // set nock interceptor
+    let mediaWikiMock = nock(mediawikiURI)
+                            // .log(log)
+                            .get('/api.php')
+                            .query(baseStatements['get_token'])
+                            .reply(200,tokenResponse);
+    mediaWikiConnector.getAuthenticationToken()
+      .then( (results) => {
+        mediaWikiMock.done();
+        results.should.be.ok;
+        results.should.be.deep.equal({status:'Success',data:encodeURI(tokenResponse.query.tokens.csrftoken)});
+        done();
+      } )
+      .catch( (reason) => done(reason) );
+  });
+
+  it('should handle an error on get authentication token from media wiki', (done) => {
+    // set nock interceptor
+    let mediaWikiMock = nock(mediawikiURI)
+                            // .log(log)
+                            .get('/api.php')
+                            .query(baseStatements['get_token'])
+                            .replyWithError('Unknown error');
+    mediaWikiConnector.getAuthenticationToken()
+      .then( () => {
+        mediaWikiMock.done();
+        done('Unhandled exception');
+      })
+      .catch( (reason) => {
+        mediaWikiMock.done();
+        reason.should.be.deep.equal({status:'Failure',data:'Unknown error'});
+        done();
+      });
+  });
 });

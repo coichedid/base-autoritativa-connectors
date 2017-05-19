@@ -1,6 +1,6 @@
 {
   "name": "base-autoritativa-connectors",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Wrappers for several authoritative databases for MediaWiki system",
   "main": "lib/index.js",
   "scripts": {

@@ -2,7 +2,7 @@ import {Client} from 'node-rest-client';
 import BaseConnector from './BaseConnector';
 
 let baseStatements = {
-  "tabelasWiki":"%5B%5BPossui+direito+de+leitura+em%3A%3A%2B%5D%5D%7C%3FPossui+direito+de+leitura+em%7Cmainlabel%3D-+",
+  "tabelasWiki":"[[Possui direito de leitura em::+]]|?Possui direito de leitura em|mainlabel=-",
   "create_page":{title:'__PAGETITLE__',section:0,text:'__BODY__',token:'__TOKEN__',action:'edit',format:'json'},
   "get_token":{meta:'tokens'}
 };

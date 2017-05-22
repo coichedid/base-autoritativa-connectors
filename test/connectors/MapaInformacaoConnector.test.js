@@ -12,7 +12,8 @@ let baseStatements = {
   "allTablesReadBySistema":"MATCH (vFrom)-[r]->(vTo) WHERE (id(vFrom) IN [2427490,2427339] OR id(vTo) IN [2427490,2427339]) AND type(r) = 'é uma Tabela com leitura pelo Login' RETURN id(vFrom), vFrom.`Identificador`, type(r), id(vTo), vTo.`Identificador` ORDER BY r.type, vFrom.`Identificador`, vTo.`Identificador` SKIP { s } LIMIT { l }",
   "oneTabela":"MATCH (v:`Tabela`) WHERE (lower(v.`Identificador`) = 'informix.bd_tecn.informix.age' OR lower(v.`Código`) = 'informix.bd_tecn.informix.age' OR lower(v.`Nome`) = 'informix.bd_tecn.informix.age') RETURN v"
 };
-let mapaInformacaoURI = 'http://localhost:7474';
+let mapaInformacaoServer = 'localhost:7474'
+let mapaInformacaoURI = 'http://' + mapaInformacaoServer;
 let mapaInformacaoPath = '/db/data/transaction/commit';
 let mapaInformacaoConnector;
 let sistemasIds = [2428048,2428049];
@@ -339,7 +340,7 @@ let args = {
 let log = (msg) => console.log(msg);
 describe('MapaInformacaoConnector', () => {
   before(() => {
-    mapaInformacaoConnector = new MapaInformacaoConnector(mapaInformacaoURI, 'test');
+    mapaInformacaoConnector = new MapaInformacaoConnector(mapaInformacaoServer, 'test');
   });
 
   afterEach(() => {

@@ -1,6 +1,8 @@
 import chai from 'chai';
 import nock from 'nock';
+import sinon from 'sinon';
 import MediaWikiConnector from '../../src/connectors/MediaWikiConnector';
+import bot from 'nodemw';
 
 let should = chai.should();
 let expect = chai.expect;
@@ -9,11 +11,71 @@ let log = (msg) => console.log(msg);
 let baseStatements = {
   "tabelasWiki":{query:'%5B%5BPossui+direito+de+leitura+em%3A%3A%2B%5D%5D%7C%3FPossui+direito+de+leitura+em%7Cmainlabel%3D-+',action:'ask',format:'json'},
   "create_page":{title:'__PAGETITLE__',section:0,text:'__BODY__',token:'__TOKEN__',action:'edit',format:'json'},
-  "get_token":{action:'query',meta:'tokens'}
+  "get_token":{action:'query',meta:'tokens',format:'json'}
 };
 
-let mediawikiURI = 'http://localhost';
+let mockStubs = {
+  edit:{}
+}
+
+let mediawikiServer = 'localhost';
+let mediawikiURI = 'http://' + mediawikiServer;
 let mediaWikiConnector;
+
+let mediaWikiVersion = {
+  "batchcomplete":"",
+  "query":{
+    "general":{
+      "mainpage":"P\u00e1gina principal",
+      "base":"http://wiki.devdc.ons.org.br/wiki/P%C3%A1gina_principal",
+      "sitename":"Arquitetura",
+      "logo":"http://wiki.devdc.ons.org.br/images/0/05/WikiLogo.jpg",
+      "generator":"MediaWiki 1.28.0",
+      "phpversion":"7.0.15-0ubuntu0.16.04.4",
+      "phpsapi":"apache2handler",
+      "dbtype":"mysql",
+      "dbversion":"5.7.18-0ubuntu0.16.04.1",
+      "externalimages":[""],
+      "langconversion":"",
+      "titleconversion":"",
+      "linkprefixcharset":"",
+      "linkprefix":"",
+      "linktrail":"/^([\u00e1\u00e2\u00e3\u00e0\u00e9\u00ea\u1ebd\u00e7\u00ed\u00f2\u00f3\u00f4\u00f5q\u0303\u00fa\u00fc\u0171\u0169a-z]+)(.*)$/sDu",
+      "legaltitlechars":"%!\"$&'()*,\\-.\\/0-9:;=?@A-Z\\\\^_`a-z~\\x80-\\xFF+",
+      "invalidusernamechars":"@:",
+      "fixarabicunicode":"",
+      "fixmalayalamunicode":"",
+      "case":"first-letter",
+      "lang":"pt-br",
+      "fallback":[{"code":"pt"},
+      {"code":"en"}],
+      "fallback8bitEncoding":
+      "windows-1252",
+      "writeapi":"",
+      "maxarticlesize":2097152,
+      "timezone":"America/Sao_Paulo",
+      "timeoffset":-180,
+      "articlepath":"/wiki/$1",
+      "scriptpath":"",
+      "script":"/index.php",
+      "variantarticlepath":false,
+      "server":"http://wiki.devdc.ons.org.br",
+      "servername":"wiki.devdc.ons.org.br",
+      "wikiid":"my_wiki",
+      "time":"2017-05-22T15:39:36Z",
+      "uploadsenabled":"",
+      "maxuploadsize":104857600,
+      "minuploadchunksize":1024,
+      "thumblimits":[120,150,180,200,250,300],
+      "imagelimits":[{"width":320,"height":240},{"width":640,"height":480},{"width":800,"height":600},{"width":1024,"height":768},{"width":1280,"height":1024}],
+      "favicon":"http://wiki.devdc.ons.org.br/favicon.ico",
+      "centralidlookupprovider":"local",
+      "allcentralidlookupproviders":["local"],
+      "interwikimagic":"",
+      "magiclinks":[]
+    }
+  }
+};
 
 let tabelasWikiResponse = {
   	"query": {
@@ -81,11 +143,15 @@ let tokenResponse = {
 
 describe('MediaWikiConnector', () => {
   before(() => {
-    mediaWikiConnector = new MediaWikiConnector(mediawikiURI);
+    mediaWikiConnector = new MediaWikiConnector(mediawikiServer);
   });
 
   afterEach(() => {
     nock.cleanAll();
+    for (let mockKey in mockStubs) {
+      if (mockStubs[mockKey].restore)
+        mockStubs[mockKey].restore();
+    }
   });
 
   it('shoould list known Tabela de Banco de Dados on Wiki', (done) => {
@@ -144,32 +210,39 @@ describe('MediaWikiConnector', () => {
   });
 
   it('should create a list of Tabela de Banco de Dados pages based on list of names and a authentication token', (done) => {
-    let statements = [];
-    let mediaWikiMocks = [];
-    tabelasResponse.tabelas.forEach( (tabela) => {
-      let createStatement = Object.assign({}, baseStatements['create_page']);
-      createStatement.title = tabela;
-      createStatement.text = pageBody;
-      createStatement.token = "token_criado";
-      statements.push(createStatement);
-      // set nock interceptor
-      let mediaWikiMock = nock(mediawikiURI)
-          //.log(log)
-          .get('/api.php')
-          .query(createStatement)
-          .reply(200,{edit:{result:'Success'}});
-      mediaWikiMocks.push(mediaWikiMock);
-    } );
+    let responses = [
+      {
+        "result": "Success",
+        "pageid": 1476,
+        "title": tabelasResponse.tabelas[0],
+        "contentmodel": "wikitext",
+        "nochange": ""
+      },
+      {
+        "result": "Success",
+        "pageid": 1476,
+        "title": tabelasResponse.tabelas[1],
+        "contentmodel": "wikitext",
+        "nochange": ""
+      }
+    ];
+    let calls = 0;
+    mockStubs.edit = sinon.stub(bot.prototype,'edit');
+    mockStubs.edit.callsFake( (title, content, summary, callback) => {
+      let resp = Object.assign({},responses[calls]);
+      calls += 1;
+      callback(null,resp);
+    });
 
     mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas, 'token_criado')
       .then( (data) => {
-        mediaWikiMocks.forEach( (mock) => mock.done() );
+        mockStubs.edit.restore();
         expect(data).to.exists;
-        data.should.be.deep.equal({status:'Success',data:[{ nome: tabelasResponse.tabelas[0], result: 'Success' },{ nome: tabelasResponse.tabelas[1], result: 'Success' }]});
+        data.should.be.deep.equal({status:'Success',data:responses});
         done();
       })
       .catch( (reason) => {
-        mediaWikiMocks.forEach( (mock) => mock.done() );
+        mockStubs.edit.restore();
         done(reason);
       } )
   });
@@ -220,61 +293,91 @@ describe('MediaWikiConnector', () => {
 
 
   it('should handle failure on create page of Tabela de Banco de Dados', (done) => {
-    let statements = [];
-    let mediaWikiMocks = [];
-    tabelasResponse.tabelas.forEach( (tabela,index) => {
-      let createStatement = Object.assign({}, baseStatements['create_page']);
-      createStatement.title = tabela;
-      createStatement.text = pageBody;
-      createStatement.token = "token_criado";
-      statements.push(createStatement);
-      // set nock interceptor
-      let mediaWikiMock = nock(mediawikiURI)
-          //.log(log)
-          .get('/api.php')
-          .query(createStatement)
-          .reply(200,{edit:{result:(index == 0?'Success':'Failure')}});
-      mediaWikiMocks.push(mediaWikiMock);
-    } );
+    let responses = [
+      {
+        "result": "Success",
+        "pageid": 1476,
+        "title": tabelasResponse.tabelas[0],
+        "contentmodel": "wikitext",
+        "nochange": ""
+      },
+      {
+        "result": "Failure",
+        "pageid": 1476,
+        "title": tabelasResponse.tabelas[1],
+        "contentmodel": "wikitext",
+        "nochange": ""
+      }
+    ];
+    let calls = 0;
+    mockStubs.edit = sinon.stub(bot.prototype,'edit');
+    mockStubs.edit.callsFake( (title, content, summary, callback) => {
+      let resp = Object.assign({},responses[calls]);
+      calls += 1;
+      callback(null,resp);
+    });
 
     mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas, 'token_criado')
       .then( (data) => {
-        mediaWikiMocks.forEach( (mock) => mock.done() );
+        mockStubs.edit.restore();
         done('Unhandled exception');
       })
       .catch( (reason) => {
-        mediaWikiMocks.forEach( (mock) => mock.done() );
+        mockStubs.edit.restore();
         expect(reason).be.exists;
-        reason.should.be.deep.equal({status:'Failure',data:[{ nome: tabelasResponse.tabelas[0], result: 'Success' },{ nome: tabelasResponse.tabelas[1], result: 'Failure' }]});
+        reason.should.be.deep.equal({status:'Failure',data:responses});
         done();
       });
   });
 
   it('should handle unknown error on create page of Tabela de Banco de Dados', (done) => {
-    let statements = [];
-    let mediaWikiMocks = [];
-    tabelasResponse.tabelas.forEach( (tabela,index) => {
-      let createStatement = Object.assign({}, baseStatements['create_page']);
-      createStatement.title = tabela;
-      createStatement.text = pageBody;
-      createStatement.token = "token_criado";
-      statements.push(createStatement);
-      // set nock interceptor
-      let mediaWikiMock = nock(mediawikiURI)
-          //.log(log)
-          .get('/api.php')
-          .query(createStatement)
-          .replyWithError('Unknown error');
-      mediaWikiMocks.push(mediaWikiMock);
-    } );
+    // let statements = [];
+    // let mediaWikiMocks = [];
+    // tabelasResponse.tabelas.forEach( (tabela,index) => {
+    //   let createStatement = Object.assign({}, baseStatements['create_page']);
+    //   createStatement.title = tabela;
+    //   createStatement.text = pageBody;
+    //   createStatement.token = "token_criado";
+    //   statements.push(createStatement);
+    //   // set nock interceptor
+    //   let mediaWikiMock = nock(mediawikiURI)
+    //       //.log(log)
+    //       .get('/api.php')
+    //       .query(createStatement)
+    //       .replyWithError('Unknown error');
+    //   mediaWikiMocks.push(mediaWikiMock);
+    // } );
+    let responses = [
+      {
+        "result": "Success",
+        "pageid": 1476,
+        "title": tabelasResponse.tabelas[0],
+        "contentmodel": "wikitext",
+        "nochange": ""
+      },
+      {
+        "result": "Failure",
+        "pageid": 1476,
+        "title": tabelasResponse.tabelas[1],
+        "contentmodel": "wikitext",
+        "nochange": ""
+      }
+    ];
+    let calls = 0;
+    mockStubs.edit = sinon.stub(bot.prototype,'edit');
+    mockStubs.edit.callsFake( (title, content, summary, callback) => {
+      throw 'Unknown error';
+    });
 
     mediaWikiConnector.createPageTabelaDeBancoDeDados(tabelasResponse.tabelas, 'token_criado')
       .then( () => {
-        mediaWikiMocks.forEach( (mock) => mock.done() );
+        mockStubs.edit.restore();
+        // mediaWikiMocks.forEach( (mock) => mock.done() );
         done('Unhandled exception');
       })
       .catch( (reason) => {
-        mediaWikiMocks.forEach( (mock) => mock.done() );
+        mockStubs.edit.restore();
+        // mediaWikiMocks.forEach( (mock) => mock.done() );
         reason.should.be.deep.equal({status:'Failure',data:'Unknown error'});
         done();
       });

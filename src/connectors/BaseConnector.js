@@ -1,5 +1,6 @@
 import {Client} from 'node-rest-client';
 import ConnectorException from './ConnectorException';
+import bot from 'nodemw';
 
 let client = new Client();
 let methodsArgs = {};
@@ -14,7 +15,14 @@ class BaseConnector {
    * @param {object} methods Key/Value list of methods to be registered
    * @return {void}
    */
-  _registerMethods(baseURL, methods) {
+  _registerMethods(server, methods) {
+    this.botClient = new bot({
+      protocol:'http',
+      server:server,
+      path:'',
+      debug:false
+    });
+    let baseURL = 'http://' + server;
     for (let key in methods) {
       let path = methods[key];
       let [action, verb] = key.split('_');
@@ -113,7 +121,10 @@ class BaseConnector {
           reject(data);
         }
         if (data.errors && data.errors.length > 0) {
-          reject(data.erros); 
+          reject(data.erros);
+        }
+        else if (data.error) {
+          reject(data.error);
         }
         else {
           if (!data || !this._validateResults(data,validation)) {

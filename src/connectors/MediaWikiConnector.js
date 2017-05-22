@@ -4,10 +4,10 @@ import BaseConnector from './BaseConnector';
 let baseStatements = {
   "tabelasWiki":"%5B%5BPossui+direito+de+leitura+em%3A%3A%2B%5D%5D%7C%3FPossui+direito+de+leitura+em%7Cmainlabel%3D-+",
   "create_page":{title:'__PAGETITLE__',section:0,text:'__BODY__',token:'__TOKEN__',action:'edit',format:'json'},
-  "get_token":{action:'query',meta:'tokens'}
+  "get_token":{meta:'tokens'}
 };
 
-let pageBody = '%7B%7BTemplateTabelaBancoDados%7D%7D%0A%7B%7BTabela+de+Banco+de+Dados%7D%7D%0A';
+let pageBody = '{{TemplateTabelaBancoDados}}\n{{Tabela de Banco de Dados}}';
 
 /**
  * Connector to Media Wiki
@@ -18,8 +18,8 @@ class MediaWikiConnector extends BaseConnector {
     super();
     this.baseURL = baseURL;
     this._registerMethods(this.baseURL, {'ask_GET':'/api.php?action=ask&format=json'});
-    this._registerMethods(this.baseURL, {'edit_GET':'/api.php?action=edit&format=json'});
-    this._registerMethods(this.baseURL, {'token_GET':'/api.php?action=query&meta=tokens'});
+    this._registerMethods(this.baseURL, {'edit_POST':'/api.php'});
+    this._registerMethods(this.baseURL, {'token_GET':'/api.php?action=query&format=json'});
   }
 
   getAllTabelasBancoDeDados() {
@@ -48,14 +48,12 @@ class MediaWikiConnector extends BaseConnector {
       if (!nomes || nomes.length == 0) return reject({status:'Failure',data:'No nomes list provided'});
       if (!token || token.length == 0) return reject({status:'Failure',data:'No token provided'});
       nomes.forEach( (nome) =>{
-        let args = Object.assign({}, baseStatements['create_page']);
-        args.title = nome;
-        args.text = pageBody;
-        args.token = token;
-        let fetchArgs = {action:'edit',args:args,validation:['edit','result'],parseFunction:(data) => {
-            return {nome: nome, result: data.edit.result};
-          }};
-        let promise = this._fetchResults(fetchArgs);
+        let promise = new Promise( (resolve,reject) => {
+          this.botClient.edit(nome,pageBody,'',(err,data) =>{
+            if(err) reject(err);
+            else resolve(data);
+          })
+        });
         promises.push(promise);
       });
       Promise.all(promises)

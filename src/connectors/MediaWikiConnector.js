@@ -47,9 +47,11 @@ class MediaWikiConnector extends BaseConnector {
     return new Promise( (resolve,reject) => {
       if (!nomes || nomes.length == 0) return reject({status:'Failure',data:'No nomes list provided'});
       if (!token || token.length == 0) return reject({status:'Failure',data:'No token provided'});
-      nomes.forEach( (nome) =>{
+      console.log('Total nomes: ' + nomes.length);
+      nomes.forEach( (nome,index) =>{
         let promise = new Promise( (resolve,reject) => {
           this.botClient.edit(nome,pageBody,'',(err,data) =>{
+            if ((index % 10) == 0) console.log('Done ' + index + ' of ' + nomes.length);
             if(err) reject(err);
             else resolve(data);
           })
